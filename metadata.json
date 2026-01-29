@@ -1,0 +1,8 @@
+{
+  "name": "Tishma (תשמע) - AI Legal Assistant",
+  "description": "A professional AI-powered legal document assistant for the Israeli public, designed to simplify complex legal Hebrew into actionable steps with high accessibility and RTL support.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
