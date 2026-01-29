@@ -1,33 +1,79 @@
 <!DOCTYPE html>
 <html lang="he" dir="rtl">
 <head>
-    <script type="importmap">
-    {
-      "imports": {
-        "@google/genai": "https://esm.sh/@google/genai@^1.38.0",
-        "react": "https://esm.sh/react@^19.0.0",
-        "react-dom/client": "https://esm.sh/react-dom@^19.0.0/client"
-      }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tishma - AI Legal Assistant</title>
+  <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@200..800&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script type="importmap">
+  {
+    "imports": {
+      "@google/genai": "https://esm.sh/@google/genai@^1.38.0",
+      "react": "https://esm.sh/react@^19.0.0",
+      "react-dom/client": "https://esm.sh/react-dom@^19.0.0/client"
     }
-    </script>
+  }
+  </script>
+  <style>
+    body { background-color: #000000; color: #FFFFFF; font-family: 'Assistant', sans-serif; margin: 0; }
+    .gold-glow { color: #FFD700; text-shadow: 0 0 20px rgba(255, 215, 0, 0.8); }
+  </style>
 </head>
-<body class="selection:bg-primary/30">
-    <div id="root"></div>
-    <script type="module">
-        import { GoogleGenAI } from "@google/genai";
-        import React from "react";
-        import ReactDOM from "react-dom/client";
+<body>
+  <div id="root"></div>
+  <script type="module">
+    import { GoogleGenAI } from "@google/genai";
+    import React, { useState } from "react";
+    import ReactDOM from "react-dom/client";
 
-        // פונקציית עזר למשיכת המפתח בצורה בטוחה
-        const getApiKey = () => {
-            // זה ימשוך את המפתח שהגדרת ב-Vercel
-            const key = import.meta.env.VITE_GEMINI_API_KEY;
-            if (!key) console.error("Missing API Key in Environment Variables");
-            return key;
-        };
+    const e = React.createElement;
 
-        // --- כאן נכנס שאר קוד ה-React שלך עם createElement ---
-        // חשוב להחליף כל מקום שבו כתוב process.env.API_KEY ל-getApiKey()
-    </script>
+    // פונקציה למשיכת המפתח שהגדרת ב-Vercel
+    const getApiKey = () => {
+        return import.meta.env.VITE_GEMINI_API_KEY || "";
+    };
+
+    const App = () => {
+      const [messages, setMessages] = useState([{ role: 'model', content: 'שלום! אני ניסים, העוזר המשפטי שלך. איך אפשר לעזור היום? 😊' }]);
+      const [input, setInput] = useState('');
+
+      const sendMessage = async () => {
+        if (!input.trim()) return;
+        const userMsg = { role: 'user', content: input };
+        setMessages(prev => [...prev, userMsg]);
+        setInput('');
+
+        try {
+          const genAI = new GoogleGenAI(getApiKey());
+          const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+          const result = await model.generateContent(input);
+          const response = await result.response;
+          setMessages(prev => [...prev, { role: 'model', content: response.text() }]);
+        } catch (error) {
+          setMessages(prev => [...prev, { role: 'model', content: 'מצטער, חסר לי מפתח ה-API או שיש תקלה בתקשורת. ודא שהגדרת VITE_GEMINI_API_KEY ב-Vercel. 😕' }]);
+        }
+      };
+
+      return e('div', { className: 'min-h-screen flex flex-col p-6 items-center' }, [
+        e('h1', { className: 'text-4xl font-black gold-glow mb-8' }, 'תשמע - סיוע משפטי AI'),
+        e('div', { className: 'w-full max-w-2xl bg-white/10 rounded-3xl p-6 h-[500px] overflow-y-auto flex flex-col gap-4' }, 
+          messages.map((msg, i) => e('div', { key: i, className: `p-4 rounded-2xl max-w-[80%] ${msg.role === 'user' ? 'bg-yellow-500 text-black self-end' : 'bg-white/20 text-white self-start'}` }, msg.content))
+        ),
+        e('div', { className: 'mt-6 w-full max-w-2xl flex gap-2' }, [
+          e('input', { 
+            value: input, 
+            onChange: (ev) => setInput(ev.target.value),
+            placeholder: 'כתוב כאן...',
+            className: 'flex-grow p-4 rounded-full bg-white/20 outline-none text-white'
+          }),
+          e('button', { onClick: sendMessage, className: 'bg-yellow-500 text-black px-8 py-4 rounded-full font-bold' }, 'שלח')
+        ])
+      ]);
+    };
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(e(App));
+  </script>
 </body>
 </html>
